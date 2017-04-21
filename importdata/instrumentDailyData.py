@@ -17,7 +17,7 @@ cursor = db.instrument.find({})
 for document in cursor:
     code = document['code']
     print('downloading : ' + code)
-    dailyData = ts.get_k_data(code, start = '2000-01-01', end = time.strftime("%Y-%m-%d"))
+    dailyData = ts.get_k_data(code, '2000-01-01', time.strftime("%Y-%m-%d"))
     if not dailyData.empty:
         db.instrumentDailyData.insert_many(dailyData.to_dict('records'))
 
