@@ -150,6 +150,7 @@ class my_svm:
 
                     label.append(-1)
                     dailyData['label'] = label
+                    dailyData['date'] = dailyData.index
                     db.ml.insert_many(dailyData.to_dict('records'))
                 except Exception:
                     continue
