@@ -1,7 +1,6 @@
 import os
 
 import matplotlib.pyplot as plt
-import tushare as ts
 from  pymongo import MongoClient
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
@@ -11,53 +10,40 @@ client = MongoClient('localhost', 27017)
 db = client['stock']
 
 
-class my_svm:
+class my_ml:
     def __init__(self):
         pass
 
-    def compute(self):
-        data = ts.get_h_data('603999')
-        x = data.as_matrix(columns=data.columns[0:5])
-        y = []
-        for index in range(len(data.index) - 1):
-            if data.iloc[index]['close'] < data.iloc[index + 1]['close']:
-                y.append(0)
-            else:
-                y.append(1)
-        test_size = int(len(x) * 0.8)
-
-        print '--------start-----'
-        clf = svm.SVC(kernel='linear', cache_size=7000, probability=True)
-        clf.fit(x[0:100], y[0:100])
-
-        print '------end----------'
-        print clf
-
-        self.labels = y[test_size: len(y)]
-        self.predicted = clf.predict_proba(x[test_size: len(x) - 1])
-
-    def compute_random_forest(self):
-        data = list(db.ml.find({'code': {'$ne': '603999'}, 'label': {'$ne': -1}}))
-        test_set = []
-        test_label = []
+    def prepare_data(self):
+        data = list(db.feed.find({'code': {'$ne': '603999'}, 'label': {'$ne': -1}}))
+        self.test_set = []
+        self.test_label = []
         for value in data:
-            test_set.append([value['open'], value['close'], value['high'], value['low'], value['volume']])
-            test_label.append(value['label'])
-
-        print len(test_set)
-        print '--------start-------------'
-
-        clf = RandomForestClassifier(1)
-        clf.fit(test_set, test_label)
-        print '---------end--------------'
-
-        data = list(db.ml.find({'code': '603999', 'label': {'$ne': -1}}))
+            self.test_set.append([value['open'], value['close'], value['high'], value['low'], value['volume']])
+            self.test_label.append(value['label'])
+        data = list(db.feed.find({'code': '603999', 'label': {'$ne': -1}}))
         self.validate_set = []
         self.labels = []
         for value in data:
             self.validate_set.append([value['open'], value['close'], value['high'], value['low'], value['volume']])
             self.labels.append(value['label'])
 
+    def train_svm(self):
+        self.prepare_data()
+        print '--------start-----'
+        clf = svm.SVC(kernel='linear', cache_size=7000, probability=True)
+        clf.fit(self.test_set, self.test_label)
+        print '------end----------'
+
+        self.predicted = clf.predict_proba(self.validate_set)
+
+    def train_random_forest(self):
+        self.prepare_data()
+        print len(self.test_set)
+        print '--------start-------------'
+        clf = RandomForestClassifier(1)
+        clf.fit(self.test_set, self.test_label)
+        print '---------end--------------'
         self.predicted = clf.predict_proba(self.validate_set)
 
     def gen_metrics(self, highlight_fprs=[0.05]):
@@ -126,33 +112,4 @@ class my_svm:
                 # linear interpolation
                 return (
                            (y_values[i + 1] - y_values[i]) * x - x_values[i] * y_values[i + 1] + x_values[i + 1] *
-                           y_values[
-                               i]) / (x_values[i + 1] - x_values[i])
-
-    def prepare_data(self):
-        cursor = db.instrument.find({})
-        for document in cursor:
-            code = document['code']
-
-            if db.ml.find({'code': code}).count() == 0:
-                try:
-                    print('downloading : ' + code)
-                    dailyData = ts.get_h_data(code)
-                    dailyData['code'] = code
-
-                    x = dailyData.as_matrix(columns=dailyData.columns[0:5])
-                    label = []
-                    for index in range(len(dailyData.index) - 1):
-                        if dailyData.iloc[index]['close'] < dailyData.iloc[index + 1]['close']:
-                            label.append(0)
-                        else:
-                            label.append(1)
-
-                    label.append(-1)
-                    dailyData['label'] = label
-                    dailyData['date'] = dailyData.index
-                    db.ml.insert_many(dailyData.to_dict('records'))
-                except Exception:
-                    continue
-
-        print('end of import instrument data')
+                           y_values[i]) / (x_values[i + 1] - x_values[i])
