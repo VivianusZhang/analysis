@@ -5,6 +5,13 @@ from  pymongo import MongoClient
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import *
+from datetime import datetime
+from talib.abstract import *
+from importdata.overlapRatio import *
+import pandas
+import numpy as np
+import pymongo
+import collections
 
 client = MongoClient('localhost', 27017)
 db = client['stock']
@@ -15,18 +22,18 @@ class my_ml:
         pass
 
     def prepare_data(self):
-        data = list(db.feed.find({'code': {'$ne': '603999'}, 'label': {'$ne': -1}}))
-        self.test_set = []
-        self.test_label = []
-        for value in data:
-            self.test_set.append([value['open'], value['close'], value['high'], value['low'], value['volume']])
-            self.test_label.append(value['label'])
-        data = list(db.feed.find({'code': '603999', 'label': {'$ne': -1}}))
-        self.validate_set = []
-        self.labels = []
-        for value in data:
-            self.validate_set.append([value['open'], value['close'], value['high'], value['low'], value['volume']])
-            self.labels.append(value['label'])
+        data = list(db.ratio.find({'close_sma120': {'$ne': np.nan},'label':{'$ne': -1},'date':{'$gte': datetime(2016, 01, 01, 0, 0, 0), '$lt':datetime(2017, 04, 01, 0,0,0)}}))
+        data = pd.DataFrame(data)
+
+        selected_data = data.drop(['label', 'date', '_id'], axis=1)
+        self.test_set = selected_data.values
+        self.test_label=data['label'].values
+
+        validate_data = list(db.ratio.find({'label': {'$ne': -1}, 'close_sma120': {'$ne': np.nan},'date':{'$gte': datetime(2017, 04, 01, 0,0,0)}}))
+        validate_data = pd.DataFrame(validate_data)
+        selected_validate_data = validate_data.drop(['label', 'date', '_id'], axis=1)
+        self.validate_set = selected_validate_data.values
+        self.validate_labels=validate_data['label'].values
 
     def train_svm(self):
         self.prepare_data()
@@ -40,18 +47,20 @@ class my_ml:
     def train_random_forest(self):
         self.prepare_data()
         print len(self.test_set)
+        print collections.Counter(self.test_label)
         print '--------start-------------'
-        clf = RandomForestClassifier(1)
+
+        clf = RandomForestClassifier(max_depth = 5, n_estimators = 500, n_jobs=-1)
         clf.fit(self.test_set, self.test_label)
         print '---------end--------------'
+        print len(self.validate_set)
         self.predicted = clf.predict_proba(self.validate_set)
 
     def gen_metrics(self, highlight_fprs=[0.05]):
-        save_dir = '/home/vivianzhang/Documents/analysis/'
+        save_dir = os.getcwd()
         roc_file = os.path.join(save_dir, 'ROC.png')
         fpr_tpr_file = os.path.join(save_dir, 'fpr_tpr.png')
-        fpr_accuracy_file = os.path.join(save_dir, 'accuracy.png')
-        fpr, tpr, threshold = roc_curve(self.labels, self.predicted[:, 1])
+        fpr, tpr, threshold = roc_curve(self.validate_labels, self.predicted[:, 1])
         roc_auc = auc(fpr, tpr)
 
         highlight_tprs = [0] * len(highlight_fprs)
@@ -92,6 +101,38 @@ class my_ml:
         plt.title('FPR, TPR')
         plt.legend(loc='lower left')
         plt.savefig(fpr_tpr_file)
+
+    def plot_accuracy(self, highlight_fp_pers=[0.5]):
+        save_dir = os.getcwd()
+        fpr_accuracy_file = os.path.join(save_dir, 'accuracy.png')
+        fpr, tpr, threshold = roc_curve(self.validate_labels, self.predicted[:, 1])
+        highlight_tprs = [0] * len(highlight_fp_pers)
+        highlight_fprs = [0] * len(highlight_fp_pers)
+        acc_fig = plt.figure(102)
+        acc_ax = acc_fig.add_subplot(111)
+        test_positive_per = np.count_nonzero(self.validate_labels) / float(len(self.validate_labels))
+        # print 'test_positive_per: ', test_positive_per
+        accuracy = tpr * test_positive_per + (1 - fpr) * (1 - test_positive_per)
+        accuracy_tpr = tpr * test_positive_per
+        accuracy_fpr = (1 - fpr) * (1 - test_positive_per)
+        fp_per = threshold
+        plt.plot(fp_per, accuracy, color='darkorange', lw=2)
+        print tpr
+        print fpr
+        plt.plot(fp_per, accuracy_tpr, color='green', lw=2)
+        plt.plot(fp_per, accuracy_fpr, color='red', lw=2)
+        plt.xlabel('False Positive Sample Percentage')
+        plt.ylabel('Accuracy')
+        plt.title('FP Percentage_Accuracy')
+        highlight_accs = [0] * len(highlight_fp_pers)
+        # for i in range(len(highlight_fp_pers)):
+        #     highlight_fprs[i] = highlight_fp_pers[i] / float((1 - test_positive_per))
+        #     highlight_tprs[i] = self._get_y_value_by_x_value(fpr, tpr, highlight_fprs[i])
+        #     highlight_accs[i] = highlight_tprs[i] * test_positive_per + (1 - highlight_fprs[i]) * (1 - test_positive_per)
+        #     plt.plot(highlight_fp_pers[i], highlight_accs[i], 'ro', color='blue')
+        #     acc_ax.annotate('({:2.4f}, {:2.4f})'.format(highlight_fp_pers[i], highlight_accs[i]),
+        #                     xy=(highlight_fp_pers[i], highlight_accs[i]))
+        plt.savefig(fpr_accuracy_file)
 
     def compute_return(self):
         timeseries_prediccted = reversed(self.predicted)

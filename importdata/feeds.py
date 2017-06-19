@@ -1,17 +1,21 @@
 import tushare as ts
+import time
 from  pymongo import MongoClient
+import pymongo
 
 client = MongoClient('localhost', 27017)
 db = client['stock']
+
+db.instrumentDailyData.create_index([('code', pymongo.ASCENDING)])
 
 cursor = db.instrument.find({})
 for document in cursor:
     code = document['code']
 
-    if db.ml.find({'code': code}).count() == 0:
+    if db.instrumentDailyData.find({'code': code}).count() == 0:
         try:
             print('downloading : ' + code)
-            dailyData = ts.get_h_data(code)
+            dailyData = ts.get_h_data(code, start='2015-01-01', end=time.strftime("%Y-%m-%d"))
             dailyData['code'] = code
 
             x = dailyData.as_matrix(columns=dailyData.columns[0:5])
@@ -25,7 +29,8 @@ for document in cursor:
             label.append(-1)
             dailyData['label'] = label
             dailyData['date'] = dailyData.index
-            db.feed.insert_many(dailyData.to_dict('records'))
+            print len(dailyData)
+            db.instrumentDailyData.insert_many(dailyData.to_dict('records'))
         except Exception:
             continue
 
