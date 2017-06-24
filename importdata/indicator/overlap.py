@@ -1,7 +1,7 @@
 import talib
 import pandas as pd
 
-def compute_ma_indicator(data):
+def compute_ma_indicator(data, signal = True):
     sma5 = talib.SMA(data, timeperiod=5)
     sma15 = talib.SMA(data, timeperiod=15)
     sma30 = talib.SMA(data, timeperiod=30)
@@ -17,9 +17,19 @@ def compute_ma_indicator(data):
     # If the price moves back and forth (range), the TMA won't react as much, thus letting you know the trend hasn't shifted
     tma = talib.TRIMA(data, timeperiod=22)
 
-    return pd.DataFrame({'sma5': data/sma5, 'sma15':data/sma15, 'sma30':data/sma30, 'sma60':data/sma60,
-                  'sma90':data/sma90, 'sma120': data/sma120, 'ema5': data/ema5, 'ema15': data/ema15,
-                  'ema30': data/ema30, 'dema15': data/dema15, 'dema30': dema15/dema30,'tema': data/tema, 'tma': data/tma})
+    if signal:
+        return pd.DataFrame({'sma5': data/sma5, 'sma15':sma5/sma15, 'sma30':sma15/sma30, 'sma60':data/sma60,
+                      'sma90':data/sma90, 'sma120': data/sma120, 'ema5': data/ema5, 'ema15': data/ema15,
+                      'ema30': data/ema30, 'dema15': data/dema15, 'dema30': dema15/dema30,'tema': data/tema, 'tma': data/tma})
+        #return pd.DataFrame({'sma5': data / sma5, 'sma15': data / sma15, 'sma30': data / sma30, 'sma60': data / sma60,
+        #                     'sma90': data / sma90, 'sma120': data / sma120, 'ema5': data / ema5, 'ema15': data / ema15,
+        #                     'ema30': data / ema30, 'dema15': data / dema15, 'dema30': dema15 / dema30, 'tema': data / tema,
+        #                     'tma': data / tma})
+
+    else:
+        return pd.DataFrame({'sma5':sma5, 'sma15':sma15, 'sma30':sma30, 'sma60':sma60,
+                      'sma90':sma90, 'sma120': sma120, 'ema5': ema5, 'ema15': ema15,
+                      'ema30': ema30, 'dema15': dema15, 'dema30': dema30,'tema': tema, 'tma': tma})
 
 
 # http://www.mesasoftware.com/papers/MAMA.pdf
@@ -34,22 +44,14 @@ def compute_kama(data):
     kama = talib.KAMA(data, timeperiod=30)
     return pd.DataFrame({'kama': kama}).to_dict(orient='records')
 
-def compute_bb(data):
+def compute_bb(data, signal=True):
     upperband, middleband, lowerband = talib.BBANDS(data, timeperiod=22, nbdevup=2, nbdevdn=2, matype=0)
-    return pd.DataFrame({'upperband': data/upperband, 'middleband': middleband, 'lowerband': data/lowerband})
+    if signal:
+        return pd.DataFrame({'upperband': data/upperband, 'middleband': middleband, 'lowerband': data/lowerband})
+    else:
+        return pd.DataFrame({'upperband': upperband, 'middleband': middleband, 'lowerband':lowerband})
 
-def compute_performance(data):
-    min, max = talib.MINMAX(data, timeperiod=30)
-    std = talib.STDDEV(data, timeperiod=5, nbdev=1)
-    roc1 = talib.ROCP(data, timeperiod=1)
-    roc2 = talib.ROCP(data, timeperiod=2)
-    roc3 = talib.ROCP(data, timeperiod=3)
-    roc5 = talib.ROCP(data, timeperiod=5)
-    roc10 = talib.ROCP(data, timeperiod=10)
-    macd, macdsignal, macdhist = talib.MACD(data, fastperiod=12, slowperiod=26, signalperiod=9)
 
-    return pd.DataFrame({'min': data/min, 'max': data/max, 'std': std, 'roc1': roc1, 'roc2': roc2, 'roc3': roc3, 'roc5': roc5, 'roc10': roc10
-                         ,'macd':macd, 'macdsignal': macdsignal, 'macdhist': macdhist})
 
 
 #TODO: http://www.mesasoftware.com/papers/FRAMA.pdf

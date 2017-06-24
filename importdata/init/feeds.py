@@ -34,4 +34,4 @@ for document in cursor:
         except Exception:
             continue
 
-print('end of import instrument data')
+print('end of import instrument index')

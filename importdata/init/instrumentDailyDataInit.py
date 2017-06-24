@@ -8,6 +8,9 @@ client = MongoClient()
 client = MongoClient('localhost', 27017)
 db = client['stock']
 
+
+ts.get_index()
+
 cursor = db.instrument.find({})
 for document in cursor:
     code = document['code']
@@ -17,9 +20,8 @@ for document in cursor:
     if not dailyData.empty:
         dailyData_dict = dailyData.to_dict('records');
         for i in range(len(dailyData_dict)):
-            dailyData_dict[i]['date'] = datetime.strptime(dailyData_dict[i]['date'].encode('ascii', 'ignore'),
-                                                          '%Y-%m-%d')
+            dailyData_dict[i]['date'] = datetime.strptime(dailyData_dict[i]['date'].encode('ascii', 'ignore'),'%Y-%m-%d')
 
         db.instrumentDailyData.insert_many(dailyData_dict)
 
-print('end of import instrument data')
+print('end of import instrument index')

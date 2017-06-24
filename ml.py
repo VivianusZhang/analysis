@@ -7,8 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import *
 from datetime import datetime
 from talib.abstract import *
-from importdata.overlapRatio import *
-import pandas
+import pandas as pd
 import numpy as np
 import pymongo
 import collections
@@ -18,22 +17,12 @@ db = client['stock']
 
 
 class my_ml:
-    def __init__(self):
+    def __init__(self, test_set, test_label, validate_set, validate_label ):
+        self.test_set = test_set
+        self.test_label = test_label
+        self.validate_set = validate_set
+        self.validate_labels = validate_label
         pass
-
-    def prepare_data(self):
-        data = list(db.ratio.find({'close_sma120': {'$ne': np.nan},'label':{'$ne': -1},'date':{'$gte': datetime(2016, 01, 01, 0, 0, 0), '$lt':datetime(2017, 04, 01, 0,0,0)}}))
-        data = pd.DataFrame(data)
-
-        selected_data = data.drop(['label', 'date', '_id'], axis=1)
-        self.test_set = selected_data.values
-        self.test_label=data['label'].values
-
-        validate_data = list(db.ratio.find({'label': {'$ne': -1}, 'close_sma120': {'$ne': np.nan},'date':{'$gte': datetime(2017, 04, 01, 0,0,0)}}))
-        validate_data = pd.DataFrame(validate_data)
-        selected_validate_data = validate_data.drop(['label', 'date', '_id'], axis=1)
-        self.validate_set = selected_validate_data.values
-        self.validate_labels=validate_data['label'].values
 
     def train_svm(self):
         self.prepare_data()
@@ -45,7 +34,6 @@ class my_ml:
         self.predicted = clf.predict_proba(self.validate_set)
 
     def train_random_forest(self):
-        self.prepare_data()
         print len(self.test_set)
         print collections.Counter(self.test_label)
         print '--------start-------------'
@@ -154,3 +142,4 @@ class my_ml:
                 return (
                            (y_values[i + 1] - y_values[i]) * x - x_values[i] * y_values[i + 1] + x_values[i + 1] *
                            y_values[i]) / (x_values[i + 1] - x_values[i])
+

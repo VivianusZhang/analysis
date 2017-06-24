@@ -1,4 +1,6 @@
-import overlapRatio
+from indicator import overlap
+from indicator import momentum
+from indicator import label
 from  pymongo import MongoClient
 import pymongo
 import numpy as np
@@ -20,17 +22,7 @@ for value in db.instrumentDailyData.distinct('code'):
 
     print '------starting-----------' + value
 
-
-
     feed = reduce(lambda x, y: {key:np.append(x[key],[y[key]]) for key in x}, data, {'close': np.array([]), 'high': np.array([]), 'low': np.array([]), 'open': np.array([]), 'volume': np.array([])})
-
-    close_ma = overlapRatio.compute_ma_indicator(feed['close'])
-    close_ma.rename(columns=dict(zip(close_ma.columns, map(lambda x:'close_'+x, close_ma.columns))), inplace=True)
-
-
-
-    bb = overlapRatio.compute_bb(feed['close'])
-    performance = overlapRatio.compute_performance(feed['close'])
 
     for value in data:
         value['ratio_open'] = value['close']-value['open']
@@ -38,22 +30,19 @@ for value in db.instrumentDailyData.distinct('code'):
         value['ratio_low'] = value['close'] - value['low']
 
     ret = pd.DataFrame(data)
-    #add label
-    label = []
-    dailyData = pd.DataFrame(data)
-    for index in range(len(dailyData.index) - 1):
-        if dailyData.iloc[index+1]['close'] > dailyData.iloc[index]['close']:
-            label.append(1)
-        else:
-            label.append(0)
 
-    label.append(-1)
-    ret['label'] = label
+    close_ma = overlap.compute_ma_indicator(feed['close'])
+    close_ma.rename(columns=dict(zip(close_ma.columns, map(lambda x:'close_'+x, close_ma.columns))), inplace=True)
 
+    bb = overlap.compute_bb(feed['close'])
+    performance = momentum.compute_performance(feed['close'])
+    rsi = momentum.compute_rsi(feed['close'])
     ret['obv'] = talib.OBV(feed['close'], feed['volume'])
     ret[bb.columns.values] = bb
     ret[close_ma.columns.values] = close_ma
     ret[performance.columns.values] = performance
+    ret[rsi.columns.values] = rsi
+    ret['label'] = label.compute_label(data)
 
     if db.ratio.find({'code':value}).count() == 0:
         db.ratio.insert_many(ret.to_dict('records'))
