@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 #add label; up:1, down:-1
 def compute_label(data):
@@ -13,14 +14,19 @@ def compute_label(data):
     label.append(0)
     return label
 
-def compute_signal(source, indicator):
-    signal = [0]
-    for i in range(len(source)) - 1:
-        if source[i + 1] > indicator[i + 1] & source[i] < indicator[i]:
-            signal.append(1)
-        elif source[i + 1] < indicator[i + 1] & source[i] > indicator[i]:
-            signal.append(-1)
-        else:
+def compute_signal_ma(source, indicator):
+    signal = []
+    i = 1
+    for i in range(len(source)) :
+        if i == 0:
             signal.append(0)
+        else:
+            if source[i] > indicator[i] and source[i-1] < indicator[i-1]:
+                signal.append(1)
+            elif source[i] < indicator[i] and source[i-1] > indicator[i-1]:
+                signal.append(-1)
+            else:
+                signal.append(0)
 
-    return signal
+    return np.asarray(signal)
+

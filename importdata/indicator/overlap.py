@@ -1,5 +1,6 @@
 import talib
 import pandas as pd
+import numpy as np
 
 def compute_ma_indicator(data, signal = True):
     sma5 = talib.SMA(data, timeperiod=5)
@@ -21,11 +22,11 @@ def compute_ma_indicator(data, signal = True):
         return pd.DataFrame({'sma5': data/sma5, 'sma15':sma5/sma15, 'sma30':sma15/sma30, 'sma60':data/sma60,
                       'sma90':data/sma90, 'sma120': data/sma120, 'ema5': data/ema5, 'ema15': data/ema15,
                       'ema30': data/ema30, 'dema15': data/dema15, 'dema30': dema15/dema30,'tema': data/tema, 'tma': data/tma})
-        #return pd.DataFrame({'sma5': data / sma5, 'sma15': data / sma15, 'sma30': data / sma30, 'sma60': data / sma60,
-        #                     'sma90': data / sma90, 'sma120': data / sma120, 'ema5': data / ema5, 'ema15': data / ema15,
-        #                     'ema30': data / ema30, 'dema15': data / dema15, 'dema30': dema15 / dema30, 'tema': data / tema,
+        # return pd.DataFrame({'sma5': label.compute_signal_ma(data, sma5), 'sma15': label.compute_signal_ma(sma5, sma15), 'sma30': label.compute_signal_ma(sma15, sma30), 'sma60': label.compute_signal_ma(data, sma60),
+        #                     'sma90': label.compute_signal_ma(data, sma90), 'sma120': label.compute_signal_ma(data, sma120), 'ema5': label.compute_signal_ma(data, ema5), 'ema15': label.compute_signal_ma(ema5, ema15),
+        #                     'ema30': label.compute_signal_ma(data, ema30), 'dema15': data / dema15, 'dema30': dema15 / dema30, 'tema': data / tema,
         #                     'tma': data / tma})
-
+        #
     else:
         return pd.DataFrame({'sma5':sma5, 'sma15':sma15, 'sma30':sma30, 'sma60':sma60,
                       'sma90':sma90, 'sma120': sma120, 'ema5': ema5, 'ema15': ema15,
@@ -47,6 +48,22 @@ def compute_kama(data):
 def compute_bb(data, signal=True):
     upperband, middleband, lowerband = talib.BBANDS(data, timeperiod=22, nbdevup=2, nbdevdn=2, matype=0)
     if signal:
+        #return pd.DataFrame({'upperband': data/upperband, 'middleband': middleband, 'lowerband': data/lowerband})
+        uppersignal = []
+        for i in range(len(data)):
+            if data[i] > upperband[i]:
+                uppersignal.append(-1)
+            else:
+                uppersignal.append(0)
+
+        lowersignal = []
+        for i in range(len(data)):
+            if data[i] < lowerband[i]:
+                lowersignal.append(1)
+            else:
+                lowersignal.append(0)
+
+        # return pd.DataFrame({'upperband': np.asarray(uppersignal), 'middleband': middleband, 'lowerband':np.asarray(lowersignal)})
         return pd.DataFrame({'upperband': data/upperband, 'middleband': middleband, 'lowerband': data/lowerband})
     else:
         return pd.DataFrame({'upperband': upperband, 'middleband': middleband, 'lowerband':lowerband})

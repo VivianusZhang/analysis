@@ -41,11 +41,9 @@ def compute_indicator(data):
     ret['label'] = label.compute_label(ret)
     ret[close_ma.columns.values] = close_ma
     ret[performance.columns.values] = performance
-    return ret;
+    return ret
 
-#000001:上证指数，所有股票之和
-#399300: 沪深300
-#399301: 深圳成指
+
 if __name__ == "__main__":
-  filepath = '399300'
+  filepath = '000001'
   import_content(filepath)

@@ -6,6 +6,7 @@ import pymongo
 import numpy as np
 import pandas as pd
 import talib
+import functools
 
 client = MongoClient()
 client = MongoClient('localhost', 27017)
@@ -20,9 +21,9 @@ for value in db.instrumentDailyData.distinct('code'):
     if db.ratio.find({'code': value}).count() > 0:
         continue
 
-    print '------starting-----------' + value
+    print ('------starting-----------' + value)
 
-    feed = reduce(lambda x, y: {key:np.append(x[key],[y[key]]) for key in x}, data, {'close': np.array([]), 'high': np.array([]), 'low': np.array([]), 'open': np.array([]), 'volume': np.array([])})
+    feed = functools.reduce(lambda x, y: {key:np.append(x[key],[y[key]]) for key in x}, data, {'close': np.array([]), 'high': np.array([]), 'low': np.array([]), 'open': np.array([]), 'volume': np.array([])})
 
     for value in data:
         value['ratio_open'] = value['close']-value['open']

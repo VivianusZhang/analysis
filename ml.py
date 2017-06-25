@@ -11,10 +11,10 @@ import pandas as pd
 import numpy as np
 import pymongo
 import collections
+from GCForest import *
 
 client = MongoClient('localhost', 27017)
 db = client['stock']
-
 
 class my_ml:
     def __init__(self, test_set, test_label, validate_set, validate_label ):
@@ -24,25 +24,39 @@ class my_ml:
         self.validate_labels = validate_label
         pass
 
-    def train_svm(self):
-        self.prepare_data()
-        print '--------start-----'
-        clf = svm.SVC(kernel='linear', cache_size=7000, probability=True)
-        clf.fit(self.test_set, self.test_label)
-        print '------end----------'
+    def train_gcforest(self):
+        print (len(self.test_set))
+        print (collections.Counter(self.test_label))
+        print ('--------start-------------')
+        gcf = gcForest(shape_1X=10, window=5)
+        gcf.fit(self.test_set, self.test_label)
+        print ('---------end--------------')
+        print (len(self.validate_set))
+        self.predicted = gcf.predict_proba(self.validate_set)
+        np.savetxt("result.csv", self.predicted, delimiter=",")
 
-        self.predicted = clf.predict_proba(self.validate_set)
+    #
+    # def train_svm(self):
+    #     self.prepare_data()
+    #     print '--------start-----'
+    #     clf = svm.SVC(kernel='linear', cache_size=7000, probability=True)
+    #     clf.fit(self.test_set, self.test_label)
+    #     print '------end----------'
+    #
+    #     self.predicted = clf.predict_proba(self.validate_set)
 
     def train_random_forest(self):
-        print len(self.test_set)
-        print collections.Counter(self.test_label)
-        print '--------start-------------'
+        print (len(self.test_set))
+        print (collections.Counter(self.test_label))
+        print ('--------start-------------')
 
         clf = RandomForestClassifier(max_depth = 5, n_estimators = 500, n_jobs=-1)
         clf.fit(self.test_set, self.test_label)
-        print '---------end--------------'
-        print len(self.validate_set)
+        print ('---------end--------------')
+        print (len(self.validate_set))
         self.predicted = clf.predict_proba(self.validate_set)
+        np.savetxt("result.csv", self.predicted, delimiter=",")
+
 
     def gen_metrics(self, highlight_fprs=[0.05]):
         save_dir = os.getcwd()
@@ -105,8 +119,6 @@ class my_ml:
         accuracy_fpr = (1 - fpr) * (1 - test_positive_per)
         fp_per = threshold
         plt.plot(fp_per, accuracy, color='darkorange', lw=2)
-        print tpr
-        print fpr
         plt.plot(fp_per, accuracy_tpr, color='green', lw=2)
         plt.plot(fp_per, accuracy_fpr, color='red', lw=2)
         plt.xlabel('False Positive Sample Percentage')
