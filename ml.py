@@ -1,23 +1,19 @@
+import collections
 import os
 
 import matplotlib.pyplot as plt
-from  pymongo import MongoClient
-from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier
+from pymongo import MongoClient
+from sklearn import preprocessing
 from sklearn.metrics import *
-from datetime import datetime
-from talib.abstract import *
-import pandas as pd
-import numpy as np
-import pymongo
-import collections
+
 from GCForest import *
 
 client = MongoClient('localhost', 27017)
 db = client['stock']
 
+
 class my_ml:
-    def __init__(self, test_set, test_label, validate_set, validate_label ):
+    def __init__(self, test_set, test_label, validate_set, validate_label):
         self.test_set = test_set
         self.test_label = test_label
         self.validate_set = validate_set
@@ -25,14 +21,20 @@ class my_ml:
         pass
 
     def train_gcforest(self):
-        print (len(self.test_set))
-        print (collections.Counter(self.test_label))
-        print ('--------start-------------')
-        gcf = gcForest(shape_1X=10, window=5)
+        print(len(self.test_set))
+        print(collections.Counter(self.test_label))
+        print('--------start-------------')
+        gcf = gcForest(shape_1X=[1,6], window=[1,5], n_jobs=-1)
+
+        self.test_set = preprocessing.scale(self.test_set)
+
         gcf.fit(self.test_set, self.test_label)
-        print ('---------end--------------')
-        print (len(self.validate_set))
+        print('---------end--------------')
+        print(len(self.validate_set))
+
+        self.validate_set = preprocessing.scale(self.validate_set)
         self.predicted = gcf.predict_proba(self.validate_set)
+
         np.savetxt("result.csv", self.predicted, delimiter=",")
 
     #
@@ -46,17 +48,16 @@ class my_ml:
     #     self.predicted = clf.predict_proba(self.validate_set)
 
     def train_random_forest(self):
-        print (len(self.test_set))
-        print (collections.Counter(self.test_label))
-        print ('--------start-------------')
+        print(len(self.test_set))
+        print(collections.Counter(self.test_label))
+        print('--------start-------------')
 
-        clf = RandomForestClassifier(max_depth = 5, n_estimators = 500, n_jobs=-1)
+        clf = RandomForestClassifier(max_depth=5, n_estimators=500, n_jobs=-1)
         clf.fit(self.test_set, self.test_label)
-        print ('---------end--------------')
-        print (len(self.validate_set))
+        print('---------end--------------')
+        print(len(self.validate_set))
         self.predicted = clf.predict_proba(self.validate_set)
         np.savetxt("result.csv", self.predicted, delimiter=",")
-
 
     def gen_metrics(self, highlight_fprs=[0.05]):
         save_dir = os.getcwd()
@@ -108,8 +109,8 @@ class my_ml:
         save_dir = os.getcwd()
         fpr_accuracy_file = os.path.join(save_dir, 'accuracy.png')
         fpr, tpr, threshold = roc_curve(self.validate_labels, self.predicted[:, 1])
-        highlight_tprs = [0] * len(highlight_fp_pers)
-        highlight_fprs = [0] * len(highlight_fp_pers)
+        #highlight_tprs = [0] * len(highlight_fp_pers)
+        #highlight_fprs = [0] * len(highlight_fp_pers)
         acc_fig = plt.figure(102)
         acc_ax = acc_fig.add_subplot(111)
         test_positive_per = np.count_nonzero(self.validate_labels) / float(len(self.validate_labels))
@@ -154,4 +155,3 @@ class my_ml:
                 return (
                            (y_values[i + 1] - y_values[i]) * x - x_values[i] * y_values[i + 1] + x_values[i + 1] *
                            y_values[i]) / (x_values[i + 1] - x_values[i])
-
