@@ -24,7 +24,7 @@ class my_ml:
         print(len(self.test_set))
         print(collections.Counter(self.test_label))
         print('--------start-------------')
-        gcf = gcForest(shape_1X=[1,6], window=[1,5], n_jobs=-1)
+        gcf = gcForest(shape_1X=[1,15], window=[1,10], n_jobs=-1)
 
         self.test_set = preprocessing.scale(self.test_set)
 

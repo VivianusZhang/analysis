@@ -3,6 +3,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from  pymongo import MongoClient
+from tonglian.stockKnowledge import *
 
 client = MongoClient('localhost', 27017)
 db = client['stock']
@@ -12,21 +13,24 @@ class initData:
     def __init__(self):
         pass
 
-    def prepare_data(self):
-        test_start_datetime = datetime(2016, 6, 1, 0, 0, 0)
+    def prepare_data(self, code):
+        test_start_datetime = datetime(2016, 1, 1, 0, 0, 0)
         test_end_datetime = datetime(2017, 3, 1, 0, 0, 0)
-        test_set, test_label = self.prepare_data_set('test.csv', test_start_datetime, test_end_datetime)
+
+        code_list = get_related_stocks(code)
+        code_list.append(code)
+        test_set, test_label = self.prepare_data_set('test.csv', code_list, test_start_datetime, test_end_datetime)
 
         validate_start_datetime = datetime(2017, 3, 1, 0, 0, 0)
         validate_end_datetime = datetime(2017, 6, 1, 0, 0, 0)
-        validate_set, validate_label = self.prepare_data_set('validate.csv', validate_start_datetime,
+        validate_set, validate_label = self.prepare_data_set('validate.csv',code_list, validate_start_datetime,
                                                              validate_end_datetime)
         return test_set, test_label, validate_set, validate_label
 
-    def prepare_data_set(self, filename, startDatetime, endDatetime):
+    def prepare_data_set(self, filename, code_list,startDatetime, endDatetime):
 
-        code_list = list(db.instrument.find({'industry': {'$in': ['软件服务', '互联网', '电脑设备']}}))
-        code_list = list(map((lambda x: x['code']), code_list))
+        #code_list = list(db.instrument.find({'industry': {'$in': ['软件服务', '互联网', '电脑设备']}}))
+        #code_list = list(map((lambda x: x['code']), code_list))
 
         data = list(db.ratio.find(
             {'code': {'$in': code_list}, 'label': {'$ne': -1},
