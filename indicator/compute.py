@@ -1,14 +1,9 @@
-import functools
+from datetime import datetime
 
-import numpy as np
-import pandas as pd
-import pymongo
-import talib
-from  pymongo import MongoClient
-
-from importdata.indicator import label
-from importdata.indicator import momentum
-from importdata.indicator import overlap
+from indicator.gtja.gtja import *
+from indicator.talib import overlap
+from indicator.talib.label import *
+from indicator.talib.momentum import *
 
 client = MongoClient('localhost', 27017)
 db = client['stock']
@@ -19,7 +14,7 @@ def compute_indicators():
 
         data = list(db.instrumentDailyData.find({'code': value}, {'_id': 0, 'amount': 0, 'label': 0}).sort('date',
                                                                                                            pymongo.ASCENDING))
-        #ignore IPO
+        # ignore IPO
         if len(data) < 50:
             continue
 
@@ -44,9 +39,9 @@ def compute_indicators():
                         inplace=True)
 
         bb = overlap.compute_bb(feed['close'], False)
-        performance = momentum.compute_performance(feed['close'], False)
-        rsi = momentum.compute_rsi(feed['close'], False)
-        di = momentum.compute_di(feed['high'], feed['low'], feed['close'], feed['volume'])
+        performance = compute_performance(feed['close'], False)
+        rsi = compute_rsi(feed['close'], False)
+        di = compute_di(feed['high'], feed['low'], feed['close'], feed['volume'])
         ret['obv'] = talib.OBV(feed['close'], feed['volume'])
         ret[bb.columns.values] = bb
         ret[close_ma.columns.values] = close_ma
@@ -54,10 +49,12 @@ def compute_indicators():
         ret[rsi.columns.values] = rsi
         ret[di.columns.values] = di
         ret['cycle'] = talib.HT_DCPERIOD(feed['close'])
-        ret['label'] = label.compute_label(data)
+        ret['label'] = compute_label(data)
 
         if db.ratio.find({'code': value}).count() == 0:
             db.ratio.insert_many(ret.to_dict('records'))
 
+
 if __name__ == '__main__':
-    compute_indicators()
+    # compute_indicators()
+    gtja_9('000001', datetime(2017, 3, 1, 0, 0, 0))

@@ -5,11 +5,11 @@ import numpy as np
 import pandas as pd
 import pymongo
 import tushare as ts
-from pymongo import MongoClient
-
 from importdata.indicator import label
 from importdata.indicator import momentum
-from importdata.indicator import overlap
+from pymongo import MongoClient
+
+from indicator.talib import overlap
 
 client = MongoClient()
 client = MongoClient('localhost', 27017)
