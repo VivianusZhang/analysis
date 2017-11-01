@@ -3,12 +3,8 @@ import functools
 import numpy as np
 import pandas as pd
 import pymongo
-import talib
-from  pymongo import MongoClient
 
-from importdata.indicator import label
-from importdata.indicator import momentum
-from importdata.indicator import overlap
+from  pymongo import MongoClient
 
 client = MongoClient('localhost', 27017)
 db = client['stock']
