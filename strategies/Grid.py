@@ -8,8 +8,10 @@ import tushare as ts
 class Grid():
     def __init__(self, instrument, date):
         cons = ts.get_apis()
+        print ('start to download data from tushare')
         self.data = ts.bar(instrument, conn=cons, freq='1min', start_date=date, end_date=date)
-        self.data['date'] = self.data.index
+        print ('end to download data from tushare')
+        self.data['time'] = self.data.index
         self.data = self.data.reindex(index=self.data.index[::-1])
         self.asset = 1000000
         self.position = 10000
@@ -27,7 +29,7 @@ class Grid():
 
         for index, row in self.data.iterrows():
             # check whether close is between range, and whether the grid is triggered
-            if abs(row.close - current_base) - step < 0.00000001:
+            if abs(abs(row.close - current_base) - step) < 0.00000001:
                 if lowest_price <= row.close <= highest_price:
                     if row.close > current_base:
                         current_base, current_position, initial_position, remaining_asset, total_asset = self.order_buy(
@@ -41,8 +43,8 @@ class Grid():
                             position_price)
                 else:
                     print(
-                        'price reach grid at: %f, no trigger action, current remaining_asset: %f exceed stop buy or stop sell' % (
-                            row.close, remaining_asset))
+                        '[%s]price reach grid at: %.2f, no trigger action, current remaining_asset: %.2f, current total asset: %.2f, exceed stop buy or stop sell' % (
+                            row.time, row.close, total_asset, remaining_asset))
 
         print ('total remaining_asset at day end: %f, profit: %f' % (
             total_asset, (total_asset - self.asset) / self.asset))
@@ -86,8 +88,8 @@ class Grid():
         if remaining_asset < current_bar.close * no_of_stock:
 
             print(
-                'price reach grid at: %f, trigger action: BUY, current asset: %f, no enough asset, do not make order' % (
-                    current_bar.close, remaining_asset))
+                '[%s]price reach grid at: %.2f, trigger action: BUY , current remaining_asset: %.2f, current total asset: %.2f, no enough asset, do not make order' % (
+                    current_bar.time, current_bar.close, remaining_asset, total_asset))
 
             return current_base, current_position, initial_position, remaining_asset, total_asset
         else:
@@ -102,8 +104,9 @@ class Grid():
         remaining_asset = remaining_asset - self.charge_commission(current_bar.close, no_of_stock)
         total_asset = total_asset - self.charge_commission(current_bar.close, no_of_stock)
 
-        print('price reach grid at: %f, trigger action: BUY, current asset: %f, make order, time: %s' % (
-            current_bar.close, remaining_asset, current_bar.date))
+        print(
+            '[%s]price reach grid at: %.2f, trigger action: BUY , current remaining_asset: %.2f, current total asset: %.2f, make order' % (
+                current_bar.time, current_bar.close, remaining_asset, total_asset))
 
         return current_bar.close, current_position, initial_position, remaining_asset, total_asset
 
@@ -112,13 +115,13 @@ class Grid():
                    position_price):
         if initial_position < no_of_stock:
             print(
-                'price reach grid at: %f, trigger action: SELL, current asset: %f, no enough yesterday position, do not make order' % (
-                    current_bar.close, remaining_asset))
+                '[%s]price reach grid at: %.2f, trigger action: SELL, current remaining_asset: %.2f, current total asset: %.2f, no enough yesterday position, do not make order' % (
+                    current_bar.time, current_bar.close, remaining_asset, total_asset))
 
             return current_base, current_position, initial_position, remaining_asset, total_asset
         else:
             return self.execute_sell(current_bar, current_position, initial_position, no_of_stock, remaining_asset,
-                                     total_asset,position_price)
+                                     total_asset, position_price)
 
     def execute_sell(self, current_bar, current_position, initial_position, no_of_stock, remaining_asset, total_asset,
                      position_price):
@@ -134,8 +137,9 @@ class Grid():
         remaining_asset = remaining_asset - self.charge_commission(current_bar.close, no_of_stock)
         total_asset = total_asset - self.charge_commission(current_bar.close, no_of_stock)
 
-        print('price reach grid at: %f, trigger action: SELL, current asset: %f, make order' % (
-            current_bar.close, remaining_asset))
+        print(
+            '[%s]price reach grid at: %.2f, trigger action: SELL, current remaining_asset: %.2f, current total asset: %.2f, make order' % (
+                current_bar.time, current_bar.close, remaining_asset, total_asset))
 
         return current_bar.close, current_position, initial_position, remaining_asset, total_asset
 
@@ -145,4 +149,4 @@ class Grid():
 
 if __name__ == "__main__":
     grid = Grid('002001', '2017/10/31')
-    grid.grid(25.1, 0.05, 10, 25, 25.6, 1000, 25.1)
+    grid.grid(25.3, 0.05, 10, 25, 25.6, 1000, 25.3)
