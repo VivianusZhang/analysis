@@ -56,16 +56,20 @@ class MakeOrder:
         asset = asset - self.charge_commission(current_bar.close, quantity)
 
         profit = 0
+        index = 0
         for i in range(len(stock_in_hand)):
-            if (stock_in_hand[i]['quantity'] - quantity) >= 0:
+            if quantity - stock_in_hand[i]['quantity'] >= 0:
                 profit = profit + (current_bar.close - stock_in_hand[i]['price']) * stock_in_hand[i]['quantity']
                 quantity = quantity - stock_in_hand[i]['quantity']
-                stock_in_hand.remove(stock_in_hand[i])
+                index = i + 1
                 if quantity == 0:
                     break
             else:
                 profit = profit + (current_bar.close - stock_in_hand[i]['price']) * quantity
                 stock_in_hand[i]['quantity'] = stock_in_hand[i]['quantity'] - quantity
+                break
+
+        stock_in_hand = stock_in_hand[index:]
 
         if profit > 0:
             asset = asset + profit * (1 + self.tax)

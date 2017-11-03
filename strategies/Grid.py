@@ -78,7 +78,7 @@ class Grid():
         ax.grid(which='minor', alpha=0.2)
         ax.grid(which='major', alpha=0.5)
 
-        plt.show()
+        plt.show(block = False)
 
 
 if __name__ == "__main__":
@@ -98,5 +98,5 @@ if __name__ == "__main__":
 
     data = data.reindex(index=data.index[::-1])
     grid = Grid()
-    grid.grid(data, 25.3, 0.03, 5, 25, 25.5, 1000)
-    grid.plot(data, 25.3, 0.03, 25, 25.5)
+    grid.grid(data, 25.3, 0.03, 5, 25, 25.5, 500)
+    grid.plot(data, 25.3, 0.03, 25, 26.5)
