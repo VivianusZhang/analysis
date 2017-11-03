@@ -1,79 +1,102 @@
-import pandas as pd
+import matplotlib as plt
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import numpy as np
 import tushare as ts
 
+from strategies.order.MakeOrder import MakeOrder
+from strategies.order.OrderStatus import OrderStatus
+
+
 class Grid():
+    def __init__(self, stock_in_hand=[], asset=1000000):
 
-    def __init__(self, instrument, date):
-        cons = ts.get_apis()
-        self.data = ts.bar(instrument, conn=cons, freq='1min', start_date = date, end_date='')
-        self.asset = 1000000
-        self.position = 10000
-        self.tax = 0.001
-        self.commission = 0.0025
+        self.stock_in_hand = stock_in_hand
+        self.asset = asset
+        self.make_order = MakeOrder()
 
-    def grid(self, base_price, step, no_of_step, stop_buy, stop_sell, no_of_stock, position_price, asset):
+    def grid(self, data, base_price, step, no_of_step, lower_bound, upper_bound, quantity):
 
-        current_base = base_price
-        current_position = initial_position = self.position
+        data['time'] = data.index
 
-        for index, row in self.data.iterrows():
+        initial_asset = self.asset
+        lowest_price = min(lower_bound, base_price - step * no_of_step)
+        highest_price = max(upper_bound, base_price + step * no_of_step)
+
+        for index, row in data.iterrows():
             # check whether close is between range, and whether the grid is triggered
-            if stop_buy <= row.close <= stop_sell & abs(row.close - current_base) == step:
-                # check whether exceed upper and lower boundary
-                if (current_base - base_price)/step <= no_of_step:
-                    if row.close > current_base:
-                        current_base, current_position, initial_position, asset = self.order_buy(
-                            row.close, current_position, initial_position,no_of_stock, asset)
+            if abs(abs(row.close - base_price) - step) < 0.00000001:
+                if lowest_price <= row.close <= highest_price:
+                    if row.close > base_price:
 
+                        status, self.asset, self.stock_in_hand = self.make_order.order_buy(
+                            row, quantity, self.asset, self.stock_in_hand)
+                        if status == OrderStatus.SUCCESS:
+                            base_price = row.close
                     else:
-                        current_base, current_position, initial_position, asset = self.order_sell(row.close, current_position, initial_position,
-                                                                       no_of_stock, asset, position_price)
-
+                        status, self.asset, self.stock_in_hand = self.make_order.order_sell(
+                            row, quantity, self.asset, self.stock_in_hand)
+                        if status == OrderStatus.SUCCESS:
+                            base_price = row.close
                 else:
-                    print('price reach grid at: ' + row.close + 'no trigger action: ' + ' current asset: ' + asset +
-                          'exceed stop buy or stop sell')
+                    print('[%s]price reach grid at: %.2f, '
+                          'no trigger action, '
+                          'current total asset: %.2f, '
+                          'exceed stop buy or stop sell' % (row.time, row.close, self.asset))
 
-    def order_buy(self, price, current_position, initial_position, no_of_stock, current_base, asset):
-        if asset < price * no_of_stock:
-            print('price reach grid at: ' + price + ' trigger action: BUY, current asset: ' + asset +
-                  'no enough asset, do not make order')
-            return current_base, current_position, initial_position, asset
-        else:
-            return self.execute_buy(price, current_position, initial_position, no_of_stock, asset)
-
-    def execute_buy(self, price, current_position, initial_position, no_of_stock, asset):
-        asset = asset - price * no_of_stock
-        current_position = current_position + no_of_stock
-        initial_position = initial_position - no_of_stock
-
-        asset = asset - self.charge_commission(price, no_of_stock)
-
-        print('price reach grid at: ' + price + ' trigger action: BUY, current asset' + asset +
-              ' make order')
-
-        return price, current_position, initial_position, asset
-
-    def order_sell(self, price, current_position, initial_position, no_of_stock, current_base, asset, position_price):
-        if initial_position < no_of_stock:
-            print('price reach grid at: ' + price + ' trigger action: SELL, current asset: ' + asset +
-                  'no enough yesterday position, do not make order')
-            return current_base, current_position, initial_position, asset
-        else:
-            return self.execute_sell(price, current_position, initial_position, no_of_stock, asset, position_price)
-
-    def execute_sell(self, price, current_position, initial_position, no_of_stock, asset, position_price):
-        asset = asset + price * no_of_stock
-        asset = asset - price * position_price * self.tax
-        current_position = current_position - no_of_stock
-
-        asset = asset - self.charge_commission(price, no_of_stock)
-
-        print('price reach grid at: ' + price + ' trigger action: SELL, current asset: ' + asset +
-              ' make order')
-
-        return price, current_position, initial_position, asset
+        print ('total remaining_asset at day end: %f, profit: %f' % (
+            self.asset, (self.asset - initial_asset) / initial_asset))
 
     @staticmethod
-    def charge_commission(self, price, no_of_stock):
-        return max(price * no_of_stock * self.commission, 5)
+    def plot(data, base_price, step, lower_bound, upper_bound):
+        fig, ax = plt.subplots(figsize=(14, 7))
+        df = data
+        df['date'] = df.index
 
+        quotes = []
+        for index, (date, close) in enumerate(zip(df.date, df.close)):
+            val = (mdates.date2num(date), close)
+            quotes.append(val)
+        daily_quotes = [tuple([i] + list(quote[1:])) for i, quote in enumerate(quotes)]
+
+        ax.set_xticks(range(0, len(daily_quotes), 30))
+        ax.set_xticklabels([mdates.num2date(quotes[index][0]).strftime('%b-%d-%H:%M') for index in ax.get_xticks()])
+
+        ax.plot(np.array([i[0] for i in daily_quotes]), np.array([i[1] for i in daily_quotes]))
+
+        plt.axhline(lower_bound, color='r', linestyle='-')
+        plt.axhline(upper_bound, color='r', linestyle='-')
+        plt.axhline(base_price, color='g', linestyle='-')
+
+        y_ticks = np.arange(lower_bound, upper_bound, step)
+        y_bounder = np.arange(np.amin(df.close), np.amax(df.close), 0.2)
+
+        ax.set_yticks(y_ticks)
+        ax.set_yticks(y_bounder, minor=True)
+
+        ax.grid(which='both')
+        ax.grid(which='minor', alpha=0.2)
+        ax.grid(which='major', alpha=0.5)
+
+        plt.show()
+
+
+if __name__ == "__main__":
+    cons = ts.get_apis()
+    print ('start to download data from tushare')
+    data = ts.bar('002001', conn=cons, freq='1min', start_date='2017/10/31', end_date='2017/10/31')
+    print ('end to download data from tushare')
+
+    data = data.reindex(index=data.index[::-1])
+    grid = Grid()
+    grid.grid(data, 25.1, 0.03, 5, 25, 25.5, 1000)
+    grid.plot(data, 25.1, 0.03, 25, 25.5)
+
+    print ('start to download data from tushare')
+    data = ts.bar('002001', conn=cons, freq='1min', start_date='2017/11/01', end_date='2017/11/01')
+    print ('end to download data from tushare')
+
+    data = data.reindex(index=data.index[::-1])
+    grid = Grid()
+    grid.grid(data, 25.3, 0.03, 5, 25, 25.5, 1000)
+    grid.plot(data, 25.3, 0.03, 25, 25.5)
