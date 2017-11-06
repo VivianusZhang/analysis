@@ -16,14 +16,14 @@ class MakeOrder:
                   'trigger action: BUY , '
                   'current total asset: %.2f, '
                   'current usable asset: %.2f, '
-                  'no enough asset, do not make order' % (current_bar.time, current_bar.close, asset, usable_asset))
+                  'no enough asset, do not make order' % (current_bar.datetime, current_bar.close, asset, usable_asset))
 
             return OrderStatus.FAIL, asset, stock_in_hand
         else:
             return self.execute_buy(current_bar, quantity, asset, stock_in_hand)
 
     def order_sell(self, current_bar, quantity, asset, stock_in_hand):
-        history_stock = [stock for stock in stock_in_hand if stock['time'] < current_bar.time.replace(hour=0)]
+        history_stock = [stock for stock in stock_in_hand if stock['datetime'] < current_bar.datetime.replace(hour=0)]
         total_quantity = sum([stock['quantity'] for stock in history_stock])
 
         if total_quantity < quantity:
@@ -32,7 +32,7 @@ class MakeOrder:
                   'current total asset: %.2f, '
                   'current total quantity: %.2f'
                   'no enough yesterday position, do not make order' % (
-                      current_bar.time, current_bar.close, asset, total_quantity))
+                      current_bar.datetime, current_bar.close, asset, total_quantity))
 
             return OrderStatus.FAIL, asset, stock_in_hand
         else:
@@ -41,12 +41,12 @@ class MakeOrder:
     def execute_buy(self, current_bar, no_of_stock, asset, stock_in_hand):
         asset = asset - self.charge_commission(current_bar.close, no_of_stock)
 
-        stock_in_hand.append({'price': current_bar.close, 'quantity': no_of_stock, 'time': current_bar.time})
+        stock_in_hand.append({'price': current_bar.close, 'quantity': no_of_stock, 'datetime': current_bar.datetime})
 
         print('[%s]price reach at: %.2f, '
               'trigger action: BUY , '
               'current total asset: %.2f, '
-              'make order' % (current_bar.time, current_bar.close, asset))
+              'make order' % (current_bar.datetime, current_bar.close, asset))
 
         print(*stock_in_hand, sep='\n')
 
@@ -79,7 +79,7 @@ class MakeOrder:
         print('[%s]price reach at: %.2f, '
               'trigger action: SELL, '
               'current total asset: %.2f, '
-              'make order' % (current_bar.time, current_bar.close, asset))
+              'make order' % (current_bar.datetime, current_bar.close, asset))
 
         print(*stock_in_hand, sep='\n')
 

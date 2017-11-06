@@ -1,11 +1,15 @@
+from datetime import datetime
+
 import matplotlib as plt
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
-import tushare as ts
+import pandas as pd
 
+from indicator.Intraday import vwap
 from strategies.order.MakeOrder import MakeOrder
 from strategies.order.OrderStatus import OrderStatus
+from utils.MongoUtils import find_by_code_between, get_today_min
 
 
 class Grid():
@@ -16,8 +20,6 @@ class Grid():
         self.make_order = MakeOrder()
 
     def grid(self, data, base_price, step, no_of_step, lower_bound, upper_bound, quantity):
-
-        data['time'] = data.index
 
         initial_asset = self.asset
         lowest_price = min(lower_bound, base_price - step * no_of_step)
@@ -42,7 +44,7 @@ class Grid():
                     print('[%s]price reach grid at: %.2f, '
                           'no trigger action, '
                           'current total asset: %.2f, '
-                          'exceed stop buy or stop sell' % (row.time, row.close, self.asset))
+                          'exceed stop buy or stop sell' % (row.datetime, row.close, self.asset))
 
         print ('total remaining_asset at day end: %f, profit: %f' % (
             self.asset, (self.asset - initial_asset) / initial_asset))
@@ -50,11 +52,10 @@ class Grid():
     @staticmethod
     def plot(data, base_price, step, lower_bound, upper_bound):
         fig, ax = plt.subplots(figsize=(14, 7))
-        df = data
-        df['date'] = df.index
+        df = pd.DataFrame(data)
 
         quotes = []
-        for index, (date, close) in enumerate(zip(df.date, df.close)):
+        for index, (date, close) in enumerate(zip(df.datetime, df.close)):
             val = (mdates.date2num(date), close)
             quotes.append(val)
         daily_quotes = [tuple([i] + list(quote[1:])) for i, quote in enumerate(quotes)]
@@ -78,25 +79,27 @@ class Grid():
         ax.grid(which='minor', alpha=0.2)
         ax.grid(which='major', alpha=0.5)
 
-        plt.show(block = False)
+        plt.show(block=False)
 
 
 if __name__ == "__main__":
-    cons = ts.get_apis()
-    print ('start to download data from tushare')
-    data = ts.bar('002001', conn=cons, freq='1min', start_date='2017/10/31', end_date='2017/10/31')
-    print ('end to download data from tushare')
-
-    data = data.reindex(index=data.index[::-1])
     grid = Grid()
-    grid.grid(data, 25.1, 0.03, 5, 25, 25.5, 1000)
-    grid.plot(data, 25.1, 0.03, 25, 25.5)
 
-    print ('start to download data from tushare')
-    data = ts.bar('002001', conn=cons, freq='1min', start_date='2017/11/01', end_date='2017/11/01')
-    print ('end to download data from tushare')
+    code = '002230'
+    start_date = datetime.strptime('2017/08/01', '%Y/%m/%d')
+    end_date = datetime.strptime('2017/10/31', '%Y/%m/%d')
+    daily_data = find_by_code_between(code, start_date, end_date)
 
-    data = data.reindex(index=data.index[::-1])
-    grid = Grid()
-    grid.grid(data, 25.3, 0.03, 5, 25, 25.5, 500)
-    grid.plot(data, 25.3, 0.03, 25, 26.5)
+    for i in range(len(daily_data)):
+        if i < 5:
+            continue
+        if i - 1 == len(daily_data):
+            continue
+
+        today = daily_data[i]['datetime'].strftime('%Y/%m/%d')
+        next_day = daily_data[i + 1]['datetime'].strftime('%Y/%m/%d')
+        step = (daily_data[i]['close'] - daily_data[i]['open']) / 10
+
+        grid.grid(get_today_min(code, next_day), vwap(get_today_min(code, today)), step, 10,
+                  min(daily_data[i - 4, i]['close'],
+                      max(daily_data[i - 4, i]['close'], 1000)))
