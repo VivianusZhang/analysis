@@ -3,7 +3,7 @@ import tushare as ts
 from  pymongo import MongoClient
 
 client = MongoClient()
-client = MongoClient('localhost', 27017)
+client = MongoClient('119.23.219.217', 27017)
 db = client['stock']
 
 cons = ts.get_apis()
@@ -20,7 +20,7 @@ for document in cursor:
             dailyData = ts.bar(code, conn=cons, start_date='2015-01-01', end_date='2017/10/31')
             dailyData['code'] = code
             dailyData['volume'] = dailyData['vol']
-            dailyData.drop('vol', 1)
+            dailyData.drop('vol', 1, inplace=True)
             dailyData['datetime'] = dailyData.index
             db.instrumentDailyData.insert_many(dailyData.to_dict('records'))
         except Exception:

@@ -4,7 +4,7 @@ from strategies.order.OrderStatus import OrderStatus
 
 
 class MakeOrder:
-    def __init__(self, tax=0.001, commission=0.0025):
+    def __init__(self, tax=0.001, commission=0.0003):
         self.tax = tax
         self.commission = commission
 
@@ -30,7 +30,7 @@ class MakeOrder:
             print('[%s]price reach grid at: %.2f, '
                   'trigger action: SELL, '
                   'current total asset: %.2f, '
-                  'current total quantity: %.2f'
+                  'current total quantity: %.2f, '
                   'no enough yesterday position, do not make order' % (
                       current_bar.datetime, current_bar.close, asset, total_quantity))
 

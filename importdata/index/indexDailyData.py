@@ -9,7 +9,7 @@ from importdata.indicator import label
 from importdata.indicator import momentum
 from pymongo import MongoClient
 
-from indicator.talib import overlap
+from indicator.ta import overlap
 
 client = MongoClient()
 client = MongoClient('localhost', 27017)
