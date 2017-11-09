@@ -1,3 +1,5 @@
+# -*- coding:utf-8 -*-
+
 import functools
 from datetime import datetime
 
@@ -16,7 +18,6 @@ db = client['stock']
 
 def compute_gtja(date):
     cursor = db.instrument.find({'industry': 'industry'})
-    cursor = [{'code':'002230'}]
     for document in cursor:
         code = document['code']
 
@@ -104,7 +105,6 @@ def compute_indicators():
         ret[rsi.columns.values] = rsi
         ret[di.columns.values] = di
         ret['cycle'] = talib.HT_DCPERIOD(feed['close'])
-        ret['label'] = compute_label(data)
 
         if db.ratio.find({'code': value}).count() == 0:
             db.ratio.insert_many(ret.to_dict('records'))
@@ -113,4 +113,4 @@ def compute_indicators():
 if __name__ == '__main__':
     # compute_indicators()
 
-    compute_gtja(datetime(2017, 3, 1, 0, 0, 0))
+    compute_indicators()

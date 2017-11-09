@@ -1,9 +1,13 @@
+# -*- coding:utf-8 -*-
+
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
 from  pymongo import MongoClient
-from tonglian.stockKnowledge import *
+
+from indicator.ta.label import compute_label_rank
+from utils.MongoUtils import find_instument_by_industry, find_raito_by_code_list_between
 
 client = MongoClient('localhost', 27017)
 db = client['stock']
@@ -13,47 +17,52 @@ class initData:
     def __init__(self):
         pass
 
-    def prepare_data(self, code):
+    def prepare_data(self, industry):
         test_start_datetime = datetime(2016, 1, 1, 0, 0, 0)
         test_end_datetime = datetime(2017, 3, 1, 0, 0, 0)
 
-        code_list = get_related_stocks(code)
-        code_list.append(code)
-        test_set, test_label = self.prepare_data_set('test.csv', code_list, test_start_datetime, test_end_datetime)
+        test_set, test_label = self.prepare_data_set('test.csv', industry, test_start_datetime, test_end_datetime)
 
         validate_start_datetime = datetime(2017, 3, 1, 0, 0, 0)
-        validate_end_datetime = datetime(2017, 6, 1, 0, 0, 0)
-        validate_set, validate_label = self.prepare_data_set('validate.csv',code_list, validate_start_datetime,
+        validate_end_datetime = datetime(2017, 10, 1, 0, 0, 0)
+        validate_set, validate_label = self.prepare_data_set('validate.csv', industry, validate_start_datetime,
                                                              validate_end_datetime)
         return test_set, test_label, validate_set, validate_label
 
-    def prepare_data_set(self, filename, code_list,startDatetime, endDatetime):
+    def prepare_data_set(self, filename, industry, start_date, end_date):
+        print ('start to prepare data from %s to %s' % (start_date, end_date))
 
-        #code_list = list(db.instrument.find({'industry': {'$in': ['软件服务', '互联网', '电脑设备']}}))
-        #code_list = list(map((lambda x: x['code']), code_list))
+        instruments = find_instument_by_industry(industry)
 
-        data = list(db.ratio.find(
-            {'code': {'$in': code_list}, 'label': {'$ne': -1},
-             'date': {'$gte': startDatetime,
-                      '$lt': endDatetime}}))
+        ratio = find_raito_by_code_list_between(instruments.code.tolist(), start_date, end_date)
+        ratio = ratio.dropna(axis=0)
+        ratio['label'] = np.NAN
+        ratio.drop(['_id'], 1, inplace=True)
+
+        data_set = pd.DataFrame()
+        for date in ratio.datetime.unique():
+            data_set = data_set.append(compute_label_rank(ratio.loc[ratio['datetime'] == date]), ignore_index=True)
+
+        data_set.drop(['datetime'], 1, inplace=True)
         # only select open high low close volume
         # {'_id': 0, 'close': 1, 'open': 1, 'high': 1, 'low': 1, 'date': 1, 'volume': 1, 'code': 1, 'label': 1}
-        data = pd.DataFrame(data)
-        data = data.dropna(axis=0)
+        data_set = data_set.dropna(axis=0)
+
         # data.set_index(data['date'].values, inplace=True)
-        stockIndex = self.prepare_index(startDatetime, endDatetime)
+
         # selected_data = pd.concat([data, stockIndex], axis=1, join='inner')
-
-        selected_data = self.combine_index_dailydata(stockIndex, data)
         # selected_data = self.compute_cor(selected_data)
-        selected_data.to_csv(filename)
+        data_set.to_csv(filename)
+        label = data_set.label.tolist()
+        data_set.drop(['label'], 1, inplace=True)
+        data_set = data_set.apply(pd.to_numeric).to_dict('records')
 
-        label = selected_data['label'].values.astype(np.float32)
+        ret = []
+        for _ in data_set:
+            ret.append(_.values())
 
-        selected_data.drop(['label', 'date', '_id'], axis=1, inplace=True)
-        selected_data.astype(np.float32)
-        data_set = selected_data.round(4).values
-        return data_set, label
+        print ('end to prepare data from %s to %s' % (start_date, end_date))
+        return ret, label
 
     def compute_cor(self, data):
         index_close = data['index_close'].as_matrix()

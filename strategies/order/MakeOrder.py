@@ -34,7 +34,7 @@ class MakeOrder:
                   'no enough yesterday position, do not make order' % (
                       current_bar.datetime, current_bar.close, asset, total_quantity))
 
-            return OrderStatus.FAIL, asset, stock_in_hand
+            return OrderStatus.FAIL, asset, stock_in_hand, 0
         else:
             return self.execute_sell(current_bar, quantity, asset, stock_in_hand)
 
@@ -72,7 +72,8 @@ class MakeOrder:
         stock_in_hand = stock_in_hand[index:]
 
         if profit > 0:
-            asset = asset + profit * (1 + self.tax)
+            profit = profit * (1- self.tax)
+            asset = asset + profit
         else:
             asset = asset + profit
 
@@ -83,7 +84,7 @@ class MakeOrder:
 
         print(*stock_in_hand, sep='\n')
 
-        return OrderStatus.SUCCESS, asset, stock_in_hand
+        return OrderStatus.SUCCESS, asset, stock_in_hand, profit
 
     def charge_commission(self, price, quantity):
         return max(price * quantity * self.commission, 5)

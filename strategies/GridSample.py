@@ -51,7 +51,7 @@ def sample2():
     previous_data = find_by_code_on_and_before(code, previous_day)
 
     next_day_min = get_today_min(code, target_day)
-    base = next_day_min.open[0]
+    base = round(next_day_min.open[0], 2)
     #step = max(round(abs((previous_data.high[0] - previous_data.low[0]) / 10), 2), 0.1)
     step = 0.08
     lower_bound = previous_data.low[0]
@@ -61,7 +61,7 @@ def sample2():
         target_day, base, step, lower_bound, upper_bound))
 
     # set current quantity and price on hand
-    stock_in_hand = [{'price': base, 'datetime': previous_day, 'quantity': 10000}]
+    stock_in_hand = [{'price': base, 'quantity': 10000, 'datetime': previous_day}]
     grid = Grid(stock_in_hand)
     grid.grid(next_day_min, base, step, 10, lower_bound, upper_bound, 2000)
 
@@ -69,4 +69,4 @@ def sample2():
 
 
 if __name__ == '__main__':
-    sample2()
+    sample1()

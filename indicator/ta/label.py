@@ -20,6 +20,18 @@ def compute_label(data):
     return label
 
 
+def compute_label_rank(data):
+    median = pd.Series.median(data.roc1)
+
+    for i, row in data.iterrows():
+        if row.roc1 > median:
+            data.loc[i, 'label'] = 1
+        else:
+            data.loc[i, 'label'] = -1
+
+    return data
+
+
 def compute_signal_ma(source, indicator):
     signal = []
     i = 1

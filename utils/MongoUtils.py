@@ -2,7 +2,7 @@ import pandas as pd
 import pymongo
 from  pymongo import MongoClient
 
-# client = MongoClient('localhost', 27017)
+#client = MongoClient('localhost', 27017)
 client = MongoClient('119.23.219.217', 27017)
 db = client['stock']
 
@@ -35,6 +35,10 @@ def find_instrument_list():
     return list(db.instrument.find({}, {'_id': 0, 'code': 1}))
 
 
+def find_instument_by_industry(industry):
+    return pd.DataFrame(list(db.instrument.find({'industry': industry})))
+
+
 def find_close_on_or_before(self, code, date, period):
     return self.find_data_on_or_before(code, date, period)['close']
 
@@ -42,6 +46,22 @@ def find_close_on_or_before(self, code, date, period):
 def find_by_code_between(code, start_date, end_date):
     data = list(db.instrumentDailyData.find(
         {'code': code, 'datetime': {'$gte': start_date, '$lte': end_date}}).sort('datetime', pymongo.ASCENDING))
+
+    return pd.DataFrame(data)
+
+
+def find_by_code_list_between(code_list, start_date, end_date):
+    data = list(db.instrumentDailyData.find(
+        {'code': {'$in': code_list}, 'datetime': {'$gte': start_date, '$lte': end_date}}).sort('datetime',
+                                                                                               pymongo.ASCENDING))
+
+    return pd.DataFrame(data)
+
+
+def find_raito_by_code_list_between(code_list, start_date, end_date):
+    data = list(db.ratio.find(
+        {'code': {'$in': code_list}, 'datetime': {'$gte': start_date, '$lte': end_date}}).sort('datetime',
+                                                                                               pymongo.ASCENDING))
 
     return pd.DataFrame(data)
 
