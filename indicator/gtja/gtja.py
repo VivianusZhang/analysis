@@ -11,10 +11,10 @@ def gtja_110(code, date):
     sum1 = sum2 = 0
 
     for i in range(19):
-        sum1 = sum1 + max(0, data.high[i] - data.close[i + 1])
+        sum1 = sum1 + max(0, data.high.iloc[i] - data.close.iloc[i + 1])
 
     for i in range(19):
-        sum2 = sum2 + max(0, data.close[i + 1] - data.low[i])
+        sum2 = sum2 + max(0, data.close.iloc[i + 1] - data.low.iloc[i])
 
     return sum1 / sum2 * 100
 
@@ -26,8 +26,8 @@ def gtja_9(code, date):
 
     for i in range(7):
         feed.append(
-            ((data.high[i] + data.low[i]) / 2 - (data.high[i + 1] + data.low[i + 1]) / 2) *
-            (data.high[i] - data.low[i]) / data.volume[i])
+            ((data.high.iloc[i] + data.low.iloc[i]) / 2 - (data.high.iloc[i + 1] + data.low.iloc[i + 1]) / 2) *
+            (data.high.iloc[i] - data.low.iloc[i]) / data.volume.iloc[i])
 
     return talib.EMA(np.array(feed), timeperiod=7)[-1]
 
@@ -37,12 +37,12 @@ def gtja_2(code, date):
     data = find_by_code_on_and_before(code, date, 2)
 
     i = 1
-    ret = ((data.close[i] - data.low[i]) - (data.high[i] - data.close[i])) / (
-        data.high[i] - data.low[i])
+    ret = ((data.close.iloc[i] - data.low.iloc[i]) - (data.high.iloc[i] - data.close.iloc[i])) / (
+        data.high.iloc[i] - data.low.iloc[i])
 
     i = 0
-    ret = ret - ((data.close[i] - data.low[i]) - (data.high[i] - data.close[i])) / (
-        data.high[i] - data.low[i])
+    ret = ret - ((data.close.iloc[i] - data.low.iloc[i]) - (data.high.iloc[i] - data.close.iloc[i])) / (
+        data.high.iloc[i] - data.low.iloc[i])
 
     return ret
 
@@ -60,9 +60,8 @@ def gtja_68(code, date):
     feed = []
     for i in range(15):
         feed.append(
-            ((data.high[i] + data.low[i]) / 2 - (data.high[i + 1] + data.low[i + 1]) / 2) * (
-                data.high[i] - data.low[i]) /
-            data.volume[i]
+            ((data.high.iloc[i] + data.low.iloc[i]) / 2 - (data.high.iloc[i + 1] + data.low.iloc[i + 1]) / 2) * (
+                data.high.iloc[i] - data.low.iloc[i]) /data.volume.iloc[i]
         )
 
     return talib.EMA(np.array(feed), timeperiod=15)[-1]
@@ -72,19 +71,19 @@ def gtja_31(code, date):
     """(CLOSE-MEAN(CLOSE,12))/MEAN(CLOSE,12)*100"""
     data = find_by_code_on_and_before(code, date, 12)
     close_mean = np.mean(np.array(data.close))
-    return (data.close[0] - close_mean) / close_mean
+    return (data.close.iloc[0] - close_mean) / close_mean
 
 
 def gtja_29(code, date):
     """(CLOSE-DELAY(CLOSE,6))/DELAY(CLOSE,6)*VOLUME"""
     data = find_by_code_on_and_before(code, date, 6)
-    return (data.close[0] - data.close[5]) / data.close[5] * data.volume[0]
+    return (data.close.iloc[0] - data.close.iloc[5]) / data.close.iloc[5] * data.volume.iloc[0]
 
 
 def gtja_80(code, date):
     """(VOLUME-DELAY(VOLUME,5))/DELAY(VOLUME,5)*100"""
     data = find_by_code_on_and_before(code, date, 5)
-    return (data.close[0] - data.close[4]) / data.close[4] * data.volume[0]
+    return (data.close.iloc[0] - data.close.iloc[4]) / data.close.iloc[4] * data.volume.iloc[0]
 
 
 def gtja_60(code, date):
@@ -92,8 +91,8 @@ def gtja_60(code, date):
     data = find_by_code_on_and_before(code, date, 20)
     sum = 0
     for i in range(20):
-        sum = sum + ((data.close[i] - data.low[i]) - (data.high[i] - data.close[i])) / (
-            (data.high[i] - data.low[i]) * data.volume[i])
+        sum = sum + ((data.close.iloc[i] - data.low.iloc[i]) - (data.high.iloc[i] - data.close.iloc[i])) / (
+            (data.high.iloc[i] - data.low.iloc[i]) * data.volume.iloc[i])
 
     return sum
 
@@ -114,7 +113,7 @@ def gtja_26(code, date):
 def gtja_34(code, date):
     """MEAN(CLOSE,12)/CLOSE"""
     data = find_by_code_on_and_before(code, date, 12)
-    return np.mean(np.array(data.close)) / data.close[0]
+    return np.mean(np.array(data.close)) / data.close.iloc[0]
 
 
 def gtja_57(code, date):
@@ -134,13 +133,13 @@ def gtja_57(code, date):
 def gtja_88(code, date):
     """(CLOSE-DELAY(CLOSE,20))/DELAY(CLOSE,20)*100"""
     data = find_by_code_on_and_before(code, date, 20)
-    return (data.close[0] - data.close.iloc[-1]) / data.close.iloc[-1] * 100
+    return (data.close.iloc[0] - data.close.iloc[-1]) / data.close.iloc[-1] * 100
 
 
 def gtja_14(code, date):
     """CLOSE-DELAY(CLOSE,5)"""
     data = find_by_code_on_and_before(code, date, 5)
-    return (data.close[0] - data.close.iloc[-1]) / data.close.iloc[-1] * 100
+    return (data.close.iloc[0] - data.close.iloc[-1]) / data.close.iloc[-1] * 100
 
 
 def gtja_81(code, date):
@@ -152,7 +151,7 @@ def gtja_81(code, date):
 def gtja_18(code, date):
     """CLOSE/DELAY(CLOSE,5)"""
     data = find_by_code_on_and_before(code, date, 5)
-    return data.close[0] / data.close.iloc[-1]
+    return data.close.iloc[0] / data.close.iloc[-1]
 
 
 def gtja_95(code, date):
@@ -166,8 +165,8 @@ def gtja_11(code, date):
     data = find_by_code_on_and_before(code, date, 6)
     ret = 0
     for i in range(6):
-        ret = ret + ((data.close[i] - data.low[i]) - (data.high[i] - data.close[i])) / (
-            (data.high[i] - data.low[i]) * data.volume[i])
+        ret = ret + ((data.close.iloc[i] - data.low.iloc[i]) - (data.high.iloc[i] - data.close.iloc[i])) / (
+            (data.high.iloc[i] - data.low.iloc[i]) * data.volume.iloc[i])
 
     return ret
 
@@ -231,7 +230,7 @@ def gtja_96(code, date):
 
     feed = []
     for i in range(3):
-        feed.append(talib.SMA(np.array(_helper(data[i:i + 3])), timeperiod=3)[-1])
+        feed.append(talib.SMA(np.array(_helper(data[i:i + 12])), timeperiod=3)[-1])
 
     return talib.SMA(np.array(feed), timeperiod=3)[-1]
 
@@ -286,13 +285,13 @@ def gtja_158(code, date):
     """((HIGH-SMA(CLOSE,15,2))-(LOW-SMA(CLOSE,15,2)))/CLOSE"""
     data = find_by_code_on_and_before(code, date, 15)
     ema = talib.EMA(np.array(data.close), timeperiod=15)[-1]
-    return ((data.high[0] - ema) - (data.low[0] - ema)) / data.close[0]
+    return ((data.high.iloc[0] - ema) - (data.low.iloc[0] - ema)) / data.close.iloc[0]
 
 
 def gtja_126(code, date):
     """(CLOSE+HIGH+LOW)/3"""
     data = find_by_code_on_and_before(code, date, 1)
-    return (data.close[0] + data.high[0] + data.low[0]) / 3
+    return (data.close.iloc[0] + data.high.iloc[0] + data.low.iloc[0]) / 3
 
 
 def gtja_100(code, date):
@@ -329,7 +328,7 @@ def gtja_6(code, date):
     instruments = get_instruments()
     for row in instruments.iterrows():
         data = find_by_code_on_and_before(row.code, date, 4)
-        delta = (data.open[0] * 0.85 + data.high[0] * 0.15) - (data.open[-1] * 0.85 + data.high[-1] * 0.15)
+        delta = (data.open.iloc[0] * 0.85 + data.high.iloc[0] * 0.15) - (data.open.iloc[-1] * 0.85 + data.high.iloc[-1] * 0.15)
 
 
 def gtja_139(code, date):
@@ -341,19 +340,19 @@ def gtja_139(code, date):
 def gtja_106(code, date):
     """CLOSE-DELAY(CLOSE,20)"""
     data = find_by_code_on_and_before(code, date, 10)
-    return data.close[0] - data.close.iloc[-1]
+    return data.close.iloc[0] - data.close.iloc[-1]
 
 
 def gtja_178(code, date):
     """(CLOSE-DELAY(CLOSE,1))/DELAY(CLOSE,1)*VOLUME"""
     data = find_by_code_on_and_before(code, date, 2)
-    return (data.close[0] - data.close.iloc[-1]) / data.close.iloc[-1] * data.volume[0]
+    return (data.close.iloc[0] - data.close.iloc[-1]) / data.close.iloc[-1] * data.volume.iloc[0]
 
 
 def gtja_134(code, date):
     """(CLOSE-DELAY(CLOSE,12))/DELAY(CLOSE,12)*VOLUME"""
     data = find_by_code_on_and_before(code, date, 12)
-    return (data.close[0] - data.close.iloc[-1]) / data.close.iloc[-1] * data.volume[0]
+    return (data.close.iloc[0] - data.close.iloc[-1]) / data.close.iloc[-1] * data.volume.iloc[0]
 
 
 def gtja_188(code, date):
@@ -363,7 +362,7 @@ def gtja_188(code, date):
     for i in range(11):
         feed.append(data.high[i] - data.low[i])
     ema = talib.EMA(np.array(feed), timeperiod=11)[-1]
-    return (data.high[0] - data.low[0] - ema) / ema * 100
+    return (data.high.iloc[0] - data.low.iloc[0] - ema) / ema * 100
 
 
 def gtja_189(code, date):
@@ -371,15 +370,16 @@ def gtja_189(code, date):
     data = find_by_code_on_and_before(code, date, 12)
     feed = []
     for i in range(6):
-        feed.append(abs(data.close[0] - pd.Series.mean(data.close)))
+        feed.append(abs(data.close.iloc[0] - pd.Series.mean(data.close)))
     return np.mean(np.array(feed))
 
 
+# have problem if today's close is equal to today's high
 def gtja_171(code, date):
     """((-1 * ((LOW - CLOSE) * (OPEN^5))) / ((CLOSE - HIGH) * (CLOSE^5)))"""
     data = find_by_code_on_and_before(code, date)
-    return ((data.low[0] - data.close[0]) * pow(data.open[0], 5)) / (
-        (data.close[0] - data.high[0]) * pow(data.close[0], 5))
+    return ((data.low.iloc[0] - data.close.iloc[0]) * pow(data.open.iloc[0], 5)) / (
+        (data.close.iloc[0] - data.high.iloc[0]) * pow(data.close.iloc[0], 5))
 
 
 def gtja_132(code, date):
