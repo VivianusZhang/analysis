@@ -14,6 +14,14 @@ def find_by_code_on_and_before(code, date, period=1):
     return pd.DataFrame(data)
 
 
+def find_by_code_on_and_before_min(code, date, period=1):
+    day_end = date.replace(hour=23)
+    data = list(db.instrumentHourData.find(
+        {'code': code, 'datetime': {'$lte': day_end}}).sort('datetime', pymongo.DESCENDING).limit(period))
+
+    return pd.DataFrame(data)
+
+
 def find_all_on_and_before(date, period):
     data = list(db.instrumentDailyData.find(
         {'datetime': {'$lte': date}}).sort('datetime', pymongo.DESCENDING).limit(period))
