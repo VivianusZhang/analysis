@@ -2,8 +2,8 @@ import pandas as pd
 import pymongo
 from  pymongo import MongoClient
 
-#client = MongoClient('localhost', 27017)
-client = MongoClient('119.23.219.217', 27017)
+client = MongoClient('localhost', 27017)
+#client = MongoClient('119.23.219.217', 27017)
 db = client['stock']
 
 

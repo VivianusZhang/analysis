@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 
 from strategies.GridEngine import GridEngine
-from utils.MatplotlibUtils import plot
 from utils.MongoUtils import find_by_code_on_and_before, get_today_min
 
 
@@ -56,7 +55,6 @@ def find_grid_best_step(code, date, max_total_asset=True):
                 best_step = i
 
     print ('best step: %.2f' % best_step)
-    plot(data, base_price)
 
 
 if __name__ == '__main__':
