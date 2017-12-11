@@ -8,7 +8,7 @@ from strategies.GridEngine import GridEngine
 from utils.MongoUtils import find_by_code_on_and_before, get_today_min
 
 
-def backtest_grid_on_one_day(code, date, step, quantity=1000, lower_bound=0, upper_bound=maxint):
+def backtest_grid_on_one_day(code, date, base_price,  step, quantity=1000, lower_bound=0, upper_bound=maxint):
     """
          sample 2:run with pre set quantity
     """
@@ -25,7 +25,11 @@ def backtest_grid_on_one_day(code, date, step, quantity=1000, lower_bound=0, upp
     previous_date = find_by_code_on_and_before(code, target_day, 2).datetime.tolist()[-1]
     stock_in_hand = [{'price': base, 'quantity': 10000, 'datetime': previous_date}]
     grid = GridEngine(stock_in_hand)
-    grid.grid(target_day_min, base, step, lower_bound, upper_bound, quantity)
+
+    result, day_end_result = grid.grid(target_day_min, base_price, step, lower_bound, upper_bound, quantity)
+    result.update(day_end_result)
+
+    print pd.DataFrame(result)
 
 
 def find_grid_best_step(code, date, max_total_asset=True):
@@ -44,18 +48,18 @@ def find_grid_best_step(code, date, max_total_asset=True):
     for i in list(np.arange(0.02, (pd.Series.max(data.close) - pd.Series.min(data.close)) / 2, 0.01)):
         print ('--------------------run gird at : %.2f----------------------' % i)
         grid = GridEngine([{'price': base, 'quantity': 20000, 'datetime': previous_date}])
-        asset, stock_price = grid.grid(data, base_price, i, -maxint - 1, maxint, 2000)
+        result, day_end_result = grid.grid(data, base_price, i, -maxint - 1, maxint, 2000)
+
         if max_total_asset:
-            if benchmark < asset:
-                benchmark = asset
+            if benchmark < day_end_result['day end asset']:
+                benchmark = day_end_result['day end asset']
                 best_step = i
         else:
-            if benchmark > stock_price:
-                benchmark = stock_price
+            if benchmark > day_end_result['day end asset']:
+                benchmark = day_end_result['day end asset']
                 best_step = i
 
     print ('best step: %.2f' % best_step)
 
 
-if __name__ == '__main__':
-    find_grid_best_step('002001', '2017/10/30', False)
+

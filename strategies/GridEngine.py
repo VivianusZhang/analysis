@@ -64,9 +64,9 @@ class GridEngine():
 
         day_end_result = {'datetime': data.datetime[0],
                           'day end asset':day_end_asset,
-                          'profit':(day_end_asset - initial_asset) / initial_asset,
-                          'benchmark':(data.datetime[0], initial_quantity * close + initial_usable_asset),
-                          'average stock price':(data.datetime[0], average_price),
+                          'day end profit':(day_end_asset - initial_asset) / initial_asset,
+                          'benchmark':initial_quantity * close + initial_usable_asset,
+                          'average stock price': average_price,
                           'pair trading': min(buy_count, sell_count)}
 
         return result, day_end_result
