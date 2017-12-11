@@ -2,8 +2,7 @@ import pymongo
 import tushare as ts
 from  pymongo import MongoClient
 
-client = MongoClient()
-client = MongoClient('119.23.219.217', 27017)
+client = MongoClient('localhost', 27017)
 db = client['stock']
 
 cons = ts.get_apis()

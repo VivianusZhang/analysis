@@ -24,7 +24,8 @@ class GridEngine():
 
         for index, row in data.iterrows():
             # check whether close is between range, and whether the grid is triggered
-            if abs(row.close - base_price) - step >= 0:
+            # -0.0000001 cater for rounding error
+            if abs(row.close - base_price) - step >= -0.0000001:
                 if lowest_price <= row.close <= highest_price:
                     self.log_base_price(result, base_price, step)
                     if row.close < base_price:
