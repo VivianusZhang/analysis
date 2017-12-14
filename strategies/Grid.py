@@ -27,11 +27,7 @@ def backtest_grid_on_one_day(code, date, base_price,  step, usable_asset, quanti
     stock_in_hand = [{'price': base, 'quantity': quantity, 'datetime': previous_date}]
     grid = GridEngine(stock_in_hand, initial_asset)
 
-    result, day_end_result = grid.grid(target_day_min, base_price, step, lower_bound, upper_bound, quantity/20)
-    result.update(day_end_result)
-
-    print pd.DataFrame(result)
-
+    return grid.grid(target_day_min, base_price, step, lower_bound, upper_bound, quantity/20)
 
 def find_grid_best_step(code, date, max_total_asset=True):
     if max_total_asset:
