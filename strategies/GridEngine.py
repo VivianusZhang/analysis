@@ -10,7 +10,7 @@ class GridEngine():
         self.make_order = MakeOrder()
         self.trading_profit = 0
 
-    def grid(self, data, base_price, step, lower_bound, upper_bound, quantity):
+    def grid(self, data, base_price, lower_step, upper_step, lower_bound, upper_bound, quantity):
 
         initial_asset = self.asset
         initial_quantity = sum([stock['quantity'] for stock in self.stock_in_hand])
@@ -25,33 +25,29 @@ class GridEngine():
         for index, row in data.iterrows():
             # check whether close is between range, and whether the grid is triggered
             # -0.0000001 cater for rounding error
-            if abs(row.close - base_price) - step >= -0.0000001:
-                if lowest_price <= row.close <= highest_price:
-                    self.log_base_price(result, base_price, step)
-                    if row.close < base_price:
-                        execution_price = round(base_price - step, 2)
-                        status, self.asset, self.stock_in_hand = self.make_order.order_buy(
-                            row, execution_price, quantity, self.asset, self.stock_in_hand)
-                        if status == OrderStatus.SUCCESS:
-                            base_price = execution_price
-                            buy_count = buy_count + 1
-                        self.log_transactions(result, row, status, 'BUY', execution_price,
-                                         initial_asset, quantity, buy_count, sell_count)
-                    else:
-                        execution_price = round(base_price + step, 2)
-                        status, self.asset, self.stock_in_hand, profit = self.make_order.order_sell(
-                            row, execution_price, quantity, self.asset, self.stock_in_hand)
-                        self.trading_profit = self.trading_profit + profit
-                        if status == OrderStatus.SUCCESS:
-                            base_price = execution_price
-                            sell_count = sell_count + 1
-                        self.log_transactions(result, row, status, 'SELL', execution_price,
-                                              initial_asset, quantity, buy_count, sell_count)
-                else:
-                    print('[%s]price reach grid at: %.2f, '
-                          'no trigger action, '
-                          'current total asset: %.2f, '
-                          'exceed stop buy or stop sell' % (row.datetime, row.close, self.asset))
+            if lowest_price <= row.close <= highest_price:
+                if base_price - row.close - lower_step >= -0.0000001:
+
+                    self.log_base_price(result, base_price, upper_step)
+
+                    execution_price = round(base_price - upper_step, 2)
+                    status, self.asset, self.stock_in_hand = self.make_order.order_buy(
+                        row, execution_price, quantity, self.asset, self.stock_in_hand)
+                    if status == OrderStatus.SUCCESS:
+                        base_price = execution_price
+                        buy_count = buy_count + 1
+                    self.log_transactions(result, row, status, 'BUY', execution_price,
+                                     initial_asset, quantity, buy_count, sell_count)
+                elif row.close - base_price - upper_step >= -0.0000001:
+                    execution_price = round(base_price + lower_step, 2)
+                    status, self.asset, self.stock_in_hand, profit = self.make_order.order_sell(
+                        row, execution_price, quantity, self.asset, self.stock_in_hand)
+                    self.trading_profit = self.trading_profit + profit
+                    if status == OrderStatus.SUCCESS:
+                        base_price = execution_price
+                        sell_count = sell_count + 1
+                    self.log_transactions(result, row, status, 'SELL', execution_price,
+                                          initial_asset, quantity, buy_count, sell_count)
 
         # print ('[%s]total remaining_asset at day end: %.2f' % (data.datetime[0], self.asset))
         # print ('[%s]trading profit: %f' % (data.datetime[0], self.trading_profit / initial_asset))

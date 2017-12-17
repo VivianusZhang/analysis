@@ -8,7 +8,7 @@ from strategies.GridEngine import GridEngine
 from utils.MongoUtils import find_by_code_on_and_before, get_today_min
 
 
-def backtest_grid_on_one_day(code, date, base_price,  step, usable_asset, quantity=1000, lower_bound=0, upper_bound=maxint):
+def backtest_grid_on_one_day(code, date, base_price, lower_step, upper_step, usable_asset, quantity=1000, lower_bound=0, upper_bound=maxint):
     """
          sample 2:run with pre set quantity
     """
@@ -19,15 +19,15 @@ def backtest_grid_on_one_day(code, date, base_price,  step, usable_asset, quanti
     initial_asset = quantity * base + usable_asset
     # step = max(round(abs((previous_data.high[0] - previous_data.low[0]) / 10), 2), 0.1)
     print ('-----------------------------------------------------------------')
-    print ('[%s]base price: %.2f, step: %.2f, lower bound: %.2f, upper_bound: %.2f' % (
-        target_day, base_price, step, lower_bound, upper_bound))
+    print ('[%s]base price: %.2f, lower step: %.2f, upper step:%.2f lower bound: %.2f, upper_bound: %.2f' % (
+        target_day, base_price, lower_step, upper_step, lower_bound, upper_bound))
 
     # set current quantity and price on hand
     previous_date = find_by_code_on_and_before(code, target_day, 2).datetime.tolist()[-1]
     stock_in_hand = [{'price': base, 'quantity': quantity, 'datetime': previous_date}]
     grid = GridEngine(stock_in_hand, initial_asset)
 
-    return grid.grid(target_day_min, base_price, step, lower_bound, upper_bound, quantity/20)
+    return grid.grid(target_day_min, base_price, lower_step, upper_step, lower_bound, upper_bound, quantity/20)
 
 def find_grid_best_step(code, date, max_total_asset=True):
     if max_total_asset:
@@ -59,4 +59,4 @@ def find_grid_best_step(code, date, max_total_asset=True):
     print ('best step: %.2f' % best_step)
 
 if __name__ == '__main__':
-    backtest_grid_on_one_day('300094', '2017/09/29', 6.67, 0.02, 1000000, 100000, 6.26, 7.138)
+    print backtest_grid_on_one_day('002230', '2017/09/29', 54, 0.02,0.03, 1000000, 50000, 51, 55)
